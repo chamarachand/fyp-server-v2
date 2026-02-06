@@ -9,12 +9,14 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-    ],
+    allow_origins=["*"], # Change to "*" temporarily to make Postman testing easier
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def read_root():
+    return {"message": "DR Diagnosis API is live!", "docs": "/docs"}
 
 app.include_router(prediction_routes.router)
