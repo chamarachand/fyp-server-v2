@@ -4,10 +4,6 @@ FROM python:3.10
 # 2. Set the working directory inside the container
 WORKDIR /app
 
-# fix for runtime error opencv
-USER root
-RUN apt-get update && apt-get install -y libgl1-mesa-glx
-
 # 3. Create a non-root user (Security requirement for Hugging Face)
 # They generally run containers as user ID 1000
 RUN useradd -m -u 1000 user
