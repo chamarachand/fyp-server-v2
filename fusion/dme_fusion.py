@@ -11,7 +11,7 @@ def fuse_dme_prediction(oct_result: dict, tabular_result: dict | None):
         2: "OTHER_DISEASE"
     }
     oct_probs = np.array(oct_result["probabilities"]) # index 0 = DME
-    oct_dme_prob = float(oct_probs[0])  # DME probability
+    oct_dme_prob = float(oct_probs[0])
 
     if tabular_result is None:
         final_prob = oct_dme_prob
@@ -24,7 +24,12 @@ def fuse_dme_prediction(oct_result: dict, tabular_result: dict | None):
         final_prob = OCT_WEIGHT * oct_dme_prob + TABULAR_WEIGHT * tabular_dme_prob
         weights_used = {"oct": OCT_WEIGHT, "health_data": TABULAR_WEIGHT}
 
-    final_prediction = "DME" if final_prob >= 0.5 else "No DME"
+    if final_prob >= 0.5:
+        final_prediction = "DME"
+        confidence = final_prob
+    else:
+        final_prediction = "No DME"
+        confidence = 1 - final_prob
 
     # interpretation
     if oct_dme_prob >= HIGH_CONF_THRESHOLD:
@@ -36,7 +41,7 @@ def fuse_dme_prediction(oct_result: dict, tabular_result: dict | None):
 
     return {
         "final_prediction": final_prediction,
-        "confidence": round(final_prob, 4),
+        "confidence": round(confidence, 4),
         "weights_used": weights_used,
         "interpretation": interpretation
     }
