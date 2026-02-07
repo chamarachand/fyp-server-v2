@@ -133,18 +133,18 @@ def predict(request: DRPredictionRequest):
         }
     
     # fundus should be there for sure if success
-    if "fundus" in results and "health_data" in results:
+    if "fundus" in results:
         results["combined_predictions"]["dr"] = fuse_dr_prediction(
             fundus_result=results["fundus"],
-            tabular_result=results["health_data"],
+            tabular_result=results.get("health_data"),
             dm_time=data_preprocessed["dm_time"]
         )
     
     # if both oct and health data exits get combined
-    if "health_data" in results and "oct" in results:
+    if "oct" in results:
         results["combined_predictions"]["dme"] = fuse_dme_prediction(
             oct_result=results["oct"],
-            tabular_result=results["health_data"]
+            tabular_result=results.get("health_data")
         )
         
     if not results["combined_predictions"]:
