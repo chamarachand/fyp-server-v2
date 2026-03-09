@@ -126,6 +126,7 @@ def predict(request: DRPredictionRequest):
         dme_prob = tabular_model_dme.predict_proba(X).tolist()
         
         results["health_data"] = {
+            "input_features": tabular_data,
             "dr_prediction": int(dr_prediction),
             "dme_prediction": int(dme_prediction),
             "dr_probabilities": dr_prob[0], # check this [0]
