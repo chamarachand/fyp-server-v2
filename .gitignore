@@ -61,4 +61,4 @@ Thumbs.db
 # FastAPI specific
 *.pid
 instance/
-.webassets-cache
+.webassets-cacheserviceAccountKey.json
