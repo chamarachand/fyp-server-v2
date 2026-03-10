@@ -5,6 +5,7 @@ from utils.fundus_preprocessing import preprocess_local_image, preprocess_upload
 from schemas.dr_schema import DRPredictionRequest
 from routes import prediction_routes
 from routes import history_routes
+from routes import report_routes
 from database.database import get_db
 
 app = FastAPI()
@@ -24,3 +25,4 @@ def read_root():
 
 app.include_router(prediction_routes.router)
 app.include_router(history_routes.router)
+app.include_router(report_routes.router)
