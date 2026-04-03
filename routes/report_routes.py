@@ -19,7 +19,7 @@ def download_image(url: str):
         if response.status_code == 200:
             return BytesIO(response.content)
     except:
-        pass
+        print("download error")
     return None
 
 @router.post("/generate")
