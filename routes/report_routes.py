@@ -4,8 +4,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 import requests
 from datetime import datetime
@@ -43,7 +42,7 @@ def generate_report(data: SavePredictionRequest):
     elements.append(Paragraph("Ophthalmology Screening Report", styles["Title"]))
     elements.append(Spacer(1, 20))
 
-    # Patient Info
+    # Patient info
     patient_table_data = [
         ["Patient Name", data.patient_name],
         ["Patient ID", data.patient_id or "N/A"],
@@ -60,7 +59,7 @@ def generate_report(data: SavePredictionRequest):
     elements.append(table)
     elements.append(Spacer(1, 20))
 
-    # Health Data
+    # Health data
     if data.health_data:
         elements.append(Paragraph("Patient Health Data", styles["Heading2"]))
         elements.append(Spacer(1, 10))
@@ -70,7 +69,7 @@ def generate_report(data: SavePredictionRequest):
         elements.append(health_table)
         elements.append(Spacer(1, 20))
 
-    # AI Predictions (Dynamic Table)
+    # AI predictions (Dynamic table)
     elements.append(Paragraph("AI Screening Results", styles["Heading2"]))
     elements.append(Spacer(1, 10))
 
@@ -92,7 +91,7 @@ def generate_report(data: SavePredictionRequest):
     else:
         missing_tests.append("Diabetic Retinopathy")
 
-    # DME Row (Optional)
+    # DME row (if present)
     if "dme" in pred:
         dme = pred["dme"]
         prediction_table_data.append([
@@ -119,7 +118,7 @@ def generate_report(data: SavePredictionRequest):
     
     elements.append(Spacer(1, 25))
 
-    # Images Section
+    # Images section
     elements.append(Paragraph("Diagnostic Images", styles["Heading2"]))
     elements.append(Spacer(1, 10))
     

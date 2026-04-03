@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from utils.fundus_preprocessing import preprocess_local_image, preprocess_upload
 from schemas.dr_schema import DRPredictionRequest
 from routes import prediction_routes
 from routes import history_routes

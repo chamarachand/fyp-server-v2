@@ -64,14 +64,14 @@ def preprocess_oct(image_file):
         cv2.BORDER_CONSTANT, value=0
     )
 
-    # 🔑 Convert grayscale → 3 channels
+    # Convert grayscale → 3 channels
     img = np.stack([img, img, img], axis=-1)
 
     # Convert to float and batch
     img = img.astype(np.float32)
     img = np.expand_dims(img, axis=0)
 
-    # 🔑 Apply same preprocessing as training
+    # Apply same preprocessing as training
     img = preprocess_input(img)
 
     return img

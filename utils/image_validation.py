@@ -23,7 +23,7 @@ def is_garbage_image(image_bytes):
         print("confidence: ", confidence)
 
         # If it's confidently ANY known ImageNet object → reject
-        if confidence > 0.35:
+        if confidence > 0.6:
             return True, label
         
         return False, label

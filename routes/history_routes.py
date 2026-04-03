@@ -1,10 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timezone
 from google.cloud.firestore import Query
-import numpy as np
-import os
-import requests
-from io import BytesIO
 
 from schemas.save_prediction_schema import SavePredictionRequest
 from database.database import get_db
@@ -23,15 +19,12 @@ async def save_prediction(data: SavePredictionRequest):
     dr_data = data.prediction.combined_predictions.get("dr", {})
     dme_data = data.prediction.combined_predictions.get("dme", {})
     
-    # Construct structured document
     doc = {
         "patient_name": data.patient_name,
         "patient_id": data.patient_id,
         "doctor_id": data.doctor_id,
         "fundus_image_url": data.fundus_image_url,
         "oct_image_url": data.oct_image_url,
-        
-        # Saves the age, dm_time, etc.
         "health_data": data.health_data, 
 
         "prediction": {
@@ -52,7 +45,6 @@ async def save_prediction(data: SavePredictionRequest):
     }
 
     try:
-        # Add the clean record to your 'predictions' collection
         _, doc_ref = await db.collection("predictions").add(doc)
         
         return {
@@ -66,7 +58,7 @@ async def save_prediction(data: SavePredictionRequest):
             detail="Could not save to database."
         )
 
-# Fetch predictions by doctor_id
+# Get predictions by doctor id
 @router.get("/predictions")
 async def get_predictions(doctor_id: str):
     try:

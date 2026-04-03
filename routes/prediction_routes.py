@@ -5,11 +5,11 @@ import os
 import requests
 from io import BytesIO
 
-from models import fundus_model, oct_model, tabular_model_dr, tabular_model_dme
-from utils.fundus_preprocessing import preprocess_upload
+from models import fundus_model, oct_model, tabular_model_dme
+from utils.fundus_preprocessing import preprocess_fundus
 from utils.oct_preprocessing import preprocess_oct
 from utils.tabular_preprocessing import preprocess_tabular
-from fusion.dr_fusion import fuse_dr_prediction
+from fusion.dr_fusion import fuse_dr_prediction_rule_based
 from fusion.dme_fusion import fuse_dme_prediction
 from schemas.dr_schema import DRPredictionRequest
 from utils.image_validation import is_garbage_image
@@ -32,7 +32,6 @@ OCT_LABELS = {
 
 FEATURE_ORDER = [
     "age",
-    "sex",
     "dm_time",
     "alcohol_consumption",
     "smoking"
@@ -67,95 +66,6 @@ def validate_image_from_url(image_url: str, image_type: str):
 def home():
     return {"msg": "hello from server"}
 
-@router.post("/old")
-def predict(request: DRPredictionRequest):
-    print("/predict endpoint calling")
-    fundus_url = request.image_data.fundus
-    oct_url = request.image_data.oct
-    tabular_data = request.tabular_data
-    
-    results = {}
-    results["combined_predictions"] = {}
-    
-    try:
-        response = requests.get(fundus_url)
-        response.raise_for_status()
-        image_file = BytesIO(response.content)
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Could not download image: {e}")
-
-    fundus_image_preprocessed = preprocess_upload(image_file)
-    predictions, predict_class, confidence = get_prediction(fundus_model, fundus_image_preprocessed)
-    results["fundus"] = {
-        "image_path": fundus_url,
-        "prediction": CLASS_LABELS[predict_class],
-        "class_index": predict_class,
-        "confidence": round(confidence, 4),
-        "probabilities": predictions
-    }
-    
-    if oct_url:
-        try:
-            response = requests.get(oct_url)
-            response.raise_for_status()
-            image_file = BytesIO(response.content)
-        except requests.exceptions.RequestException as e:
-            raise HTTPException(status_code=400, detail=f"Could not download image: {e}")
-        
-        oct_image_preprocessed = preprocess_oct(image_file)
-        predictions, predict_class, confidence = get_prediction(oct_model, oct_image_preprocessed)
-        results["oct"] = {
-            "image_path": oct_url,
-            "prediction": OCT_LABELS[predict_class],
-            "class_index": predict_class,
-            "confidence": round(confidence, 4),
-            "probabilities": predictions
-        }
-        
-    if tabular_data:
-        data_preprocessed = preprocess_tabular(tabular_data)
-        
-        X = np.array([[data_preprocessed[f] for f in FEATURE_ORDER]])
-    
-        dr_prediction = tabular_model_dr.predict(X)[0]
-        dme_prediction = tabular_model_dme.predict(X)[0]
-        
-        dr_prob = tabular_model_dr.predict_proba(X).tolist()
-        dme_prob = tabular_model_dme.predict_proba(X).tolist()
-        
-        results["health_data"] = {
-            "input_features": tabular_data,
-            "dr_prediction": int(dr_prediction),
-            "dme_prediction": int(dme_prediction),
-            "dr_probabilities": dr_prob[0], # check this [0]
-            "dme_probabilities": dme_prob[0] # check this [0]
-        }
-    
-    # fundus should be there for sure if success
-    if "fundus" in results:
-        dp = locals().get("data_preprocessed", {})
-        
-        results["combined_predictions"]["dr"] = fuse_dr_prediction(
-            fundus_result=results["fundus"],
-            tabular_result=results.get("health_data"),
-            dm_time=dp.get("dm_time", 0) # Defaults to 0 if missing
-        )
-    
-    # if both oct and health data exits get combined
-    if "oct" in results:
-        results["combined_predictions"]["dme"] = fuse_dme_prediction(
-            oct_result=results["oct"],
-            tabular_result=results.get("health_data")
-        )
-        
-    if not results["combined_predictions"]:
-        results.pop("combined_predictions")
-        
-    if not results:
-        raise HTTPException(status_code=400, detail="No data provided for prediction")
-        
-    return results
-
 
 @router.post("/")
 def predict(request: DRPredictionRequest):
@@ -170,7 +80,7 @@ def predict(request: DRPredictionRequest):
     fundus_file = None
     oct_file = None
 
-    # Fundus check
+    # Fundus image download
     try:
         response = requests.get(fundus_url)
         response.raise_for_status()
@@ -188,7 +98,7 @@ def predict(request: DRPredictionRequest):
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Could not download fundus image: {e}")
 
-    # OCT check
+    # OCT check and download
     if oct_url:
         try:
             response = requests.get(oct_url)
@@ -207,8 +117,8 @@ def predict(request: DRPredictionRequest):
         except requests.exceptions.RequestException as e:
             raise HTTPException(status_code=400, detail=f"Could not download OCT image: {e}")
 
-    # Fundus prediction
-    fundus_image_preprocessed = preprocess_upload(fundus_file)
+    # Fundus image prediction
+    fundus_image_preprocessed = preprocess_fundus(fundus_file)
     predictions, predict_class, confidence = get_prediction(fundus_model, fundus_image_preprocessed)
 
     results["fundus"] = {
@@ -219,7 +129,7 @@ def predict(request: DRPredictionRequest):
         "probabilities": predictions
     }
 
-    # OCT prediction
+    # OCt prediction (if exists)
     if oct_file:
         oct_image_preprocessed = preprocess_oct(oct_file)
         predictions, predict_class, confidence = get_prediction(oct_model, oct_image_preprocessed)
@@ -232,38 +142,31 @@ def predict(request: DRPredictionRequest):
             "probabilities": predictions
         }
 
-    # Metadata prediction
+    # Extract tabular metadata
+    patient_facts_dict = None
     if tabular_data:
+        # Convert Pydantic model to dictionary for the rule-based logic
+        patient_facts_dict = tabular_data.dict() if hasattr(tabular_data, "dict") else tabular_data
+        print(patient_facts_dict)
+
         data_preprocessed = preprocess_tabular(tabular_data)
-        
         X = np.array([[data_preprocessed[f] for f in FEATURE_ORDER]])
-    
-        dr_prediction = tabular_model_dr.predict(X)[0]
-        dme_prediction = tabular_model_dme.predict(X)[0]
-        
-        dr_prob = tabular_model_dr.predict_proba(X).tolist()
         dme_prob = tabular_model_dme.predict_proba(X).tolist()
         
         results["health_data"] = {
-            "input_features": tabular_data,
-            "dr_prediction": int(dr_prediction),
-            "dme_prediction": int(dme_prediction),
-            "dr_probabilities": dr_prob[0],
+            "input_features": patient_facts_dict,
             "dme_probabilities": dme_prob[0]
         }
 
-    # fusion logic
-    # fundus should be there for sure if success
-    if "fundus" in results:
-        dp = locals().get("data_preprocessed", {})
-        
-        results["combined_predictions"]["dr"] = fuse_dr_prediction(
-            fundus_result=results["fundus"],
-            tabular_result=results.get("health_data"),
-            dm_time=dp.get("dm_time", 0)
-        )
+    # Rule based fusion with metadata
     
-    # if both oct and health data exits get combined
+    # Fundus DR fusion
+    if "fundus" in results:
+        results["combined_predictions"]["dr"] = fuse_dr_prediction_rule_based(
+            fundus_result=results["fundus"],
+            patient_data=patient_facts_dict
+        )
+
     if "oct" in results:
         results["combined_predictions"]["dme"] = fuse_dme_prediction(
             oct_result=results["oct"],
