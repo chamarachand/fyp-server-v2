@@ -8,7 +8,7 @@ class ImageData(BaseModel):
     
 class TabularData(BaseModel):
     age: int
-    sex: int
+    hba1c: Optional[float]
     dm_time: float
     alcohol_consumption: bool
     smoking: bool

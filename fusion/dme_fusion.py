@@ -5,11 +5,6 @@ TABULAR_WEIGHT = 0.2
 HIGH_CONF_THRESHOLD = 0.7
 
 def fuse_dme_prediction(oct_result: dict, tabular_result: dict | None):
-    class_labels = {
-        0: "DME",
-        1: "NORMAL",
-        2: "OTHER_DISEASE"
-    }
     oct_probs = np.array(oct_result["probabilities"]) # index 0 = DME
     oct_dme_prob = float(oct_probs[0])
 
