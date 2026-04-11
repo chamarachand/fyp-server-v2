@@ -17,7 +17,8 @@ FUNDUS_MODEL_PATH = 'models/fundus/best_efficientnet_b4.keras'
 OCT_MODEL_PATH = 'models/oct/best_oct_model.keras'
 # TABULAR_MODEL_DR_PATH = 'models/health_data/dr_model.joblib'
 # TABULAR_MODEL_DME_PATH = 'models/health_data/dme_model.joblib'
-TABULAR_MODEL_DME_PATH = 'models/health_data/xgb_edema_model.joblib'
+# TABULAR_MODEL_DME_PATH = 'models/health_data/xgb_edema_model.joblib'
+TABULAR_MODEL_DME_PATH = 'models/health_data/xgb_edema_model_gridsearch.joblib'
 
 # Load with native keras
 fundus_model = keras.models.load_model(FUNDUS_MODEL_PATH, compile=False)

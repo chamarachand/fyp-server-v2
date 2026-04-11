@@ -30,11 +30,19 @@ OCT_LABELS = {
     2: "OTHER_DISEASE"
 }
 
+# FEATURE_ORDER = [
+#     "age",
+#     "dm_time",
+#     "alcohol_consumption",
+#     "smoking"
+# ]
+
 FEATURE_ORDER = [
     "age",
     "dm_time",
     "alcohol_consumption",
-    "smoking"
+    "smoking",
+    "age_x_dm_time"  # <-- New engineered feature added here
 ]
 
 def get_prediction(model, image):
