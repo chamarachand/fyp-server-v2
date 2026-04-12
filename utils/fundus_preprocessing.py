@@ -7,8 +7,6 @@ from tensorflow.keras.applications.efficientnet import preprocess_input
 IMG_SIZE = 380
 
 def preprocess_fundus(image_input: Union[bytes, io.BytesIO]) -> np.ndarray:
-    """Mirrors the exact training and dataset generation pipeline."""
-    
     # Extract bytes if a BytesIO object is passed
     if isinstance(image_input, io.BytesIO):
         image_bytes = image_input.read()
@@ -22,7 +20,7 @@ def preprocess_fundus(image_input: Union[bytes, io.BytesIO]) -> np.ndarray:
     if img is None:
         raise ValueError("Could not decode image.")
 
-    # 1. Subtle black background crop
+    # Subtle black background crop
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
     coords = cv2.findNonZero(mask)
@@ -37,11 +35,11 @@ def preprocess_fundus(image_input: Union[bytes, io.BytesIO]) -> np.ndarray:
         h = min(h + 2 * pad_y, img.shape[0] - y)
         img = img[y:y+h, x:x+w]
 
-    # 2. Green channel extraction
+    # Green channel extraction
     green = img[:, :, 1]
     img = cv2.merge([green, green, green])
 
-    # 3. CLAHE
+    # CLAHE
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -49,7 +47,7 @@ def preprocess_fundus(image_input: Union[bytes, io.BytesIO]) -> np.ndarray:
     merged = cv2.merge((cl, a, b))
     img = cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
 
-    # 4. Resize with padding
+    # Resize with padding
     h, w = img.shape[:2]
     scale = IMG_SIZE / max(h, w)
     new_h, new_w = int(h * scale), int(w * scale)
@@ -62,7 +60,7 @@ def preprocess_fundus(image_input: Union[bytes, io.BytesIO]) -> np.ndarray:
     
     padded = cv2.copyMakeBorder(resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
 
-    # 5. Format for EfficientNet Input
+    # Format for EfficientNet Input
     img_array = np.array(padded, dtype=np.float32)
     img_array = np.expand_dims(img_array, axis=0) # Add batch dimension -> (1, 380, 380, 3)
     img_array = preprocess_input(img_array)       # Apply Keras EfficientNet preprocessing
