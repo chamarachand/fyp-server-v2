@@ -52,8 +52,7 @@ def calculate_clinical_risk(patient_data: dict) -> tuple[str, int]:
         return "Moderate Risk", score
     else:
         return "Low Risk", score
- 
-import numpy as np
+
 
 def fuse_dr_prediction_rule_based(fundus_result: dict, patient_data: dict | None) -> dict:
     fundus_probs = np.array(fundus_result["probabilities"])
