@@ -6,10 +6,6 @@ HIGH_CONF_THRESHOLD = 0.7
 TABULAR_OPTIMAL_THRESH = 0.5120  # The tuned F2 threshold from XGBoost
 
 def calibrate_probability(raw_prob, threshold):
-    """
-    Scales the probability so that the optimal threshold maps exactly to 0.5.
-    This ensures it plays nicely in a standard weighted average.
-    """
     if raw_prob < threshold:
         # Scale 0 to threshold -> 0 to 0.5
         return 0.5 * (raw_prob / threshold)
